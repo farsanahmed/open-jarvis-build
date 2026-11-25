@@ -19,39 +19,40 @@ class AutomationManager(private val context: Context) {
     val automationsFlow: StateFlow<List<Automation>> = _automationsFlow
     
     suspend fun loadAutomations() {
-        _automationsFlow.value = dao.getAll()
+        _automationsFlow.value = dao.getAll().map { it.toAutomation() }
     }
     
     suspend fun createAutomation(automation: Automation): String = withContext(Dispatchers.IO) {
-        dao.insert(automation)
+        dao.insert(automation.toEntity())
         
         scheduleAutomation(automation)
         
-        _automationsFlow.value = dao.getAll()
+        _automationsFlow.value = dao.getAll().map { it.toAutomation() }
         automation.id
     }
     
     suspend fun updateAutomation(automation: Automation) = withContext(Dispatchers.IO) {
-        dao.update(automation)
+        dao.update(automation.toEntity())
         cancelAutomation(automation.id)
         
         if (automation.enabled) {
             scheduleAutomation(automation)
         }
         
-        _automationsFlow.value = dao.getAll()
+        _automationsFlow.value = dao.getAll().map { it.toAutomation() }
     }
     
     suspend fun deleteAutomation(id: String) = withContext(Dispatchers.IO) {
         cancelAutomation(id)
         dao.delete(id)
-        _automationsFlow.value = dao.getAll()
+        _automationsFlow.value = dao.getAll().map { it.toAutomation() }
     }
     
     suspend fun toggleAutomation(id: String, enabled: Boolean) = withContext(Dispatchers.IO) {
-        val automation = dao.getById(id) ?: return@withContext
+        val entity = dao.getById(id) ?: return@withContext
+        val automation = entity.toAutomation()
         val updated = automation.copy(enabled = enabled)
-        dao.update(updated)
+        dao.update(updated.toEntity())
         
         if (enabled) {
             scheduleAutomation(updated)
@@ -59,12 +60,12 @@ class AutomationManager(private val context: Context) {
             cancelAutomation(id)
         }
         
-        _automationsFlow.value = dao.getAll()
+        _automationsFlow.value = dao.getAll().map { it.toAutomation() }
     }
     
     suspend fun runNow(id: String) = withContext(Dispatchers.IO) {
-        val automation = dao.getById(id) ?: return@withContext
-        executeAutomation(automation)
+        val entity = dao.getById(id) ?: return@withContext
+        executeAutomation(entity.toAutomation())
     }
     
     private suspend fun scheduleAutomation(automation: Automation) {
@@ -221,4 +222,47 @@ class AutomationManager(private val context: Context) {
         data class Interval(val intervalMs: Long) : AutomationSchedule()
         data class Once(val atMs: Long) : AutomationSchedule()
     }
+}
+
+private fun AutomationEntity.toAutomation(): Automation {
+    val schedule = when (scheduleType) {
+        "daily" -> AutomationSchedule.Daily(scheduleHour, scheduleMinute)
+        "weekly" -> AutomationSchedule.Weekly(scheduleDayOfWeek, scheduleHour, scheduleMinute)
+        "interval" -> AutomationSchedule.Interval(scheduleIntervalMs)
+        "once" -> AutomationSchedule.Once(scheduleIntervalMs)
+        else -> AutomationSchedule.Daily(0, 0)
+    }
+    return Automation(
+        id = id,
+        name = name,
+        command = command,
+        schedule = schedule,
+        enabled = enabled,
+        lastRun = lastRun,
+        lastResult = lastResult,
+        runCount = runCount
+    )
+}
+
+private fun Automation.toEntity(): AutomationEntity {
+    val (scheduleType, scheduleHour, scheduleMinute, scheduleDayOfWeek, scheduleIntervalMs) = when (schedule) {
+        is AutomationSchedule.Daily -> "daily" to schedule.hour to schedule.minute to 0 to 0L
+        is AutomationSchedule.Weekly -> "weekly" to schedule.hour to schedule.minute to schedule.dayOfWeek to 0L
+        is AutomationSchedule.Interval -> "interval" to 0 to 0 to 0 to schedule.intervalMs
+        is AutomationSchedule.Once -> "once" to 0 to 0 to 0 to schedule.atMs
+    }
+    return AutomationEntity(
+        id = id,
+        name = name,
+        command = command,
+        scheduleType = scheduleType,
+        scheduleHour = scheduleHour,
+        scheduleMinute = scheduleMinute,
+        scheduleDayOfWeek = scheduleDayOfWeek,
+        scheduleIntervalMs = scheduleIntervalMs,
+        enabled = enabled,
+        lastRun = lastRun,
+        lastResult = lastResult,
+        runCount = runCount
+    )
 }
