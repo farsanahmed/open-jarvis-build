@@ -15,12 +15,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Gradle and generate wrapper
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 7.6.3
-          generate-wrapper: true
           cache-disabled: true
+
+      - name: Generate Gradle wrapper
+        run: |
+          GRADLE_HOME="/home/runner/work/_temp/.gradle-actions/gradle-installations/installs/gradle-7.6.3"
+          export PATH="$GRADLE_HOME/bin:$PATH"
+          cd /data/user/0/com.androidharness.app/files/.harness-scratch/open-jarvis-build
+          $GRADLE_HOME/bin/gradle wrapper --gradle-version 7.6.3
 
       - name: Assemble Debug APK
         run: ./gradlew assembleDebug --stacktrace
