@@ -34,7 +34,7 @@ jobs:
           $GRADLE_HOME/bin/gradle wrapper --gradle-version 8.5
 
       - name: Assemble Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace --continue
 
       - name: Rename APK
         run: |
@@ -66,3 +66,13 @@ jobs:
           file_path: output/open-jarvis.apk
           asset_name: open-jarvis.apk
           asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            app/build/reports/
+            .gradle/
+            **/*.log
