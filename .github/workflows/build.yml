@@ -25,7 +25,6 @@ jobs:
         run: |
           GRADLE_HOME="/home/runner/work/_temp/.gradle-actions/gradle-installations/installs/gradle-7.6.3"
           export PATH="$GRADLE_HOME/bin:$PATH"
-          cd /data/user/0/com.androidharness.app/files/.harness-scratch/open-jarvis-build
           $GRADLE_HOME/bin/gradle wrapper --gradle-version 7.6.3
 
       - name: Assemble Debug APK
