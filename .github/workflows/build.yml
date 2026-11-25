@@ -35,11 +35,21 @@ jobs:
           path: output/open-jarvis.apk
 
       - name: Create GitHub Release
-        uses: softprops/gh-release@v2
+        uses: actions/create-release@v1
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: "OpenJarvis v1.0.${{ github.run_number }}"
-          files: output/open-jarvis.apk
-          generate_release_notes: true
+          body: |
+            Release for OpenJarvis build ${{ github.run_number }}
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload APK to Release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          file_path: output/open-jarvis.apk
+          asset_name: open-jarvis.apk
+          asset_content_type: application/vnd.android.package-archive
