@@ -1,17 +1,27 @@
 package com.openjarvis.ui
 
+import android.content.ComponentName
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
+import com.openjarvis.accessibility.JarvisAccessibilityService
+import com.openjarvis.agent.AgentCore
+import com.openjarvis.agent.AgentState
+import com.openjarvis.graphify.GraphifyRepository
+import com.openjarvis.graphify.nodes.TaskNode
+import com.openjarvis.ui.dashboard.DashboardScreen
+import com.openjarvis.ui.onboarding.OnboardingActivity
+import com.openjarvis.ui.settings.SettingsScreen
 import com.openjarvis.ui.theme.OpenJarvisTheme
-import com.openjarvis.ui.theme.VoidColor
 
 class SettingsActivity : ComponentActivity() {
 
@@ -27,9 +37,7 @@ class SettingsActivity : ComponentActivity() {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                            .padding(24.dp)
                     ) {
                         Text(
                             text = "Settings",
@@ -41,30 +49,20 @@ class SettingsActivity : ComponentActivity() {
 
                         Text("Providers", style = MaterialTheme.typography.titleMedium)
 
-                        val providers = listOf(
-                            "Groq" to "llama-3.1-70b-versatile",
-                            "Google Gemini" to "gemini-1.5-flash",
-                            "OpenRouter" to "meta-llama/llama-3-8b-instruct:free",
-                            "Anthropic Claude" to "claude-haiku-4-20250514",
-                            "OpenAI" to "gpt-4o-mini"
-                        )
+                        ProvidersList(onSelect = { name, baseUrl, apiKey, model ->
+                            startActivity(Intent(this, OnboardingActivity::class.java))
+                        })
 
-                        providers.forEach { (name, model) ->
-                            Card(
-                                colors = CardDefaults.cardColors(containerColor = VoidColor.Void900)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(name, style = MaterialTheme.typography.bodyLarge)
-                                    Text(
-                                        model,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = VoidColor.TextSecondary
-                                    )
-                                }
-                            }
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            onClick = { finish() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Back")
                         }
                     }
-                }
+                )
             }
         }
     }
