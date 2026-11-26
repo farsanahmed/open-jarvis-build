@@ -23,7 +23,6 @@ private val VoidDarkColors = darkColorScheme(
     onSurface = VoidColor.TextPrimary,
     surfaceVariant = VoidColor.Void800,
     onSurfaceVariant = VoidColor.TextSecondary,
-    surfaceContainer = VoidColor.Void850,
     outline = VoidColor.BorderSubtle,
     outlineVariant = VoidColor.BorderGlow,
     error = VoidColor.Red,
