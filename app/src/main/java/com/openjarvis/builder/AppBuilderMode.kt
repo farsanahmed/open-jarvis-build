@@ -9,6 +9,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
+enum class Complexity { SIMPLE, MEDIUM, COMPLEX }
+
 class AppBuilderMode(private val context: Context) {
     
     private val outputDir = File(context.filesDir, "built_apps").also { it.mkdirs() }
@@ -228,7 +230,7 @@ data class AppSpec(
     val screens: List<ScreenSpec>,
     val entities: List<EntitySpec>,
     val permissions: List<String>,
-    val complexity: AppBuilderMode.Complexity
+    val complexity: Complexity
 )
 
 data class ScreenSpec(
@@ -247,5 +249,3 @@ data class FieldSpec(
     val name: String,
     val type: String
 )
-
-enum class Complexity { SIMPLE, MEDIUM, COMPLEX }

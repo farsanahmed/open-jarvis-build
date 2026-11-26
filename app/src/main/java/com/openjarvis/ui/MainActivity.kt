@@ -8,10 +8,15 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.openjarvis.accessibility.JarvisAccessibilityService
 import com.openjarvis.agent.AgentCore
@@ -21,6 +26,7 @@ import com.openjarvis.graphify.nodes.TaskNode
 import com.openjarvis.ui.dashboard.DashboardScreen
 import com.openjarvis.ui.settings.SettingsScreen
 import com.openjarvis.ui.theme.OpenJarvisTheme
+import com.openjarvis.ui.theme.VoidColor
 
 class MainActivity : ComponentActivity() {
     
@@ -105,58 +111,58 @@ fun PermissionScreen(
     onEnableAccessibility: () -> Unit,
     onEnableOverlay: () -> Unit
 ) {
-    val primaryColor = com.openjarvis.ui.theme.VoidColor.Violet
-    val onSurfaceColor = com.openjarvis.ui.theme.VoidColor.TextPrimary
-    val onSurfaceVariantColor = com.openjarvis.ui.theme.VoidColor.TextSecondary
+    val primaryColor = VoidColor.Violet
+    val onSurfaceColor = VoidColor.TextPrimary
+    val onSurfaceVariantColor = VoidColor.TextSecondary
     
-    androidx.compose.foundation.layout.Column(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        androidx.compose.material3.Text(
+        Text(
             text = "Permission Required",
-            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineMedium,
             color = onSurfaceColor
         )
         
-        androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
-        androidx.compose.material3.Text(
+        Text(
             text = "Open Jarvis needs accessibility and overlay permissions to control your device.",
-            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium,
             color = onSurfaceVariantColor,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center
         )
         
-        androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(32.dp))
         
         if (!accessibilityEnabled) {
-            androidx.compose.material3.Button(
+            Button(
                 onClick = onEnableAccessibility,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                androidx.compose.material3.Text("Enable Accessibility Service")
+                Text("Enable Accessibility Service")
             }
             
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
         
         if (!overlayEnabled) {
-            androidx.compose.material3.Button(
+            Button(
                 onClick = onEnableOverlay,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                androidx.compose.material3.Text("Enable Overlay Permission")
+                Text("Enable Overlay Permission")
             }
         }
         
         if (accessibilityEnabled && overlayEnabled) {
-            androidx.compose.material3.Text(
+            Text(
                 text = "Jarvis is active",
-                style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium,
                 color = primaryColor
             )
         }
