@@ -53,38 +53,45 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     Scaffold(
         containerColor = VoidColor.Void950
     ) { padding ->
-        currentScreen when {
-            0 -> WelcomeScreen(onGetStarted = { currentScreen++ })
-            1 -> ProviderScreen(
-                onBack = { currentScreen-- },
-                onContinue = { currentScreen++ },
-                onSkip = { currentScreen = 3 }
-            )
-            2 -> StTTScreen(
-                onBack = { currentScreen-- },
-                onContinue = { currentScreen++ }
-            )
-            3 -> ReadyScreen(onStart = { completeOnboarding(context); onComplete() })
-        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp)
+        ) {
+            when (currentScreen) {
+                0 -> WelcomeScreen(onGetStarted = { currentScreen++ })
+                1 -> ProviderScreen(
+                    onBack = { currentScreen-- },
+                    onContinue = { currentScreen++ },
+                    onSkip = { currentScreen = 3 }
+                )
+                2 -> StTTScreen(
+                    onBack = { currentScreen-- },
+                    onContinue = { currentScreen++ }
+                )
+                3 -> ReadyScreen(onStart = { completeOnboarding(context); onComplete() })
+            }
 
-        if (currentScreen in 1..3) {
-            Spacer(modifier = Modifier.weight(1f))
+            if (currentScreen in 1..3) {
+                Spacer(modifier = Modifier.weight(1f))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                if (currentScreen > 0 && currentScreen < 4) {
-                    TextButton(onClick = { currentScreen-- }) {
-                        Text("Back", color = VoidColor.TextDisabled)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    if (currentScreen > 0 && currentScreen < 4) {
+                        TextButton(onClick = { currentScreen-- }) {
+                            Text("Back", color = VoidColor.TextDisabled)
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(1.dp))
                     }
-                } else {
-                    Spacer(modifier = Modifier.width(1.dp))
-                }
 
-                if (currentScreen < 4) {
-                    TextButton(onClick = { currentScreen++ }) {
-                        Text("Skip", color = VoidColor.TextDisabled)
+                    if (currentScreen < 4) {
+                        TextButton(onClick = { currentScreen++ }) {
+                            Text("Skip", color = VoidColor.TextDisabled)
+                        }
                     }
                 }
             }

@@ -1,10 +1,6 @@
 package com.openjarvis.ui
 
-import android.content.ComponentName
-import android.content.Intent
 import android.os.Bundle
-import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,9 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 import com.openjarvis.accessibility.JarvisAccessibilityService
 import com.openjarvis.agent.AgentCore
-import com.openjarvis.agent.AgentState
 import com.openjarvis.graphify.GraphifyRepository
-import com.openjarvis.graphify.nodes.TaskNode
 import com.openjarvis.ui.dashboard.DashboardScreen
 import com.openjarvis.ui.onboarding.OnboardingActivity
 import com.openjarvis.ui.settings.SettingsScreen
@@ -62,7 +56,7 @@ class SettingsActivity : ComponentActivity() {
                             Text("Back")
                         }
                     }
-                )
+                }
             }
         }
     }
