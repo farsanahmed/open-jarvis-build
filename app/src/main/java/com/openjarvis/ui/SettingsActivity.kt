@@ -37,7 +37,7 @@ class SettingsActivity : ComponentActivity() {
                             color = VoidColor.Violet
                         )
 
-                        HorizontalDivider(color = VoidColor.BorderSubtle)
+                        Divider(color = VoidColor.BorderSubtle)
 
                         Text("Providers", style = MaterialTheme.typography.titleMedium)
 
