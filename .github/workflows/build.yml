@@ -34,8 +34,8 @@ jobs:
       - name: Assemble Debug APK
         run: ./gradlew assembleDebug --stacktrace --continue
 
-      - name: CI Gate: Manifest vs Dex check
-        run: python3 .github/workflows/manifest_dex_gate.py
+      - name: CI Gate: Verify launcher activity in dex
+        run: python3 .github/workflows/check_launcher.py
         env:
           ANDROID_APK: app/build/outputs/apk/debug/app-debug.apk
 
@@ -44,29 +44,6 @@ jobs:
         with:
           name: open-jarvis-apk
           path: app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Create GitHub Release
-        id: create-release
-        uses: actions/create-release@v1
-        with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: "OpenJarvis v1.0.${{ github.run_number }}"
-          body: |
-            Release for OpenJarvis build ${{ github.run_number }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload APK to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: output/open-jarvis.apk
-          asset_name: open-jarvis.apk
-          asset_content_type: application/vnd.android.package-archive
 
   smoke-test:
     needs: build
@@ -127,9 +104,3 @@ jobs:
         with:
           name: launch-screenshot
           path: screenshot.png
-
-      - name: Upload logcat
-        uses: actions/upload-artifact@v4
-        with:
-          name: logcat
-          path: logcat.txt

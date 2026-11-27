@@ -4,6 +4,7 @@
 import zipfile
 import sys
 import os
+import re
 
 def main():
     apk_path = os.environ.get("ANDROID_APK", None)
@@ -33,7 +34,10 @@ def main():
         
         # Also check the original (broken) class should NOT be solely relied upon
         broken_class = b'Lcom/openjarvis/MainActivity;'
-        broken_found = broken_class in zf.read(dex_files[0]) if dex_files else b''
+        if dex_files:
+            broken_found = broken_class in zf.read(dex_files[0])
+        else:
+            broken_found = False
         
         print(f"Broken class Lcom/openjarvis/MainActivity in first dex: {broken_found}")
         
