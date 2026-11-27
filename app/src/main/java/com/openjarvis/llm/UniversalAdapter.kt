@@ -12,6 +12,7 @@ class UniversalAdapter(private val context: Context) {
     private var prefs: android.content.SharedPreferences? = null
 
     init {
+        var fallback = false
         try {
             masterKey = MasterKey.Builder(context)
                 .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -24,7 +25,18 @@ class UniversalAdapter(private val context: Context) {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
         } catch (e: Exception) {
-            // Keystore failure - fall back to regular SharedPreferences
+            // Keystore failed - try deleting corrupted prefs and recreating
+            try {
+                context.deleteFile("jarvis_encrypted_prefs.xml")
+                // Also delete any leftover encrypted shared prefs file
+                val encryptedPrefsFile = java.io.File(context.getExternalFilesDir(null), "jarvis_encrypted_prefs")
+                if (encryptedPrefsFile.exists()) encryptedPrefsFile.delete()
+            } catch (e2: Exception) {
+                // ignore
+            }
+            fallback = true
+        }
+        if (fallback) {
             prefs = context.getSharedPreferences("jarvis_prefs", android.content.Context.MODE_PRIVATE)
         }
     }
@@ -60,22 +72,11 @@ class UniversalAdapter(private val context: Context) {
     suspend fun testConnection(): Result<Long> = getActiveProvider().testConnection()
 
     fun saveSettings(name: String, baseUrl: String, apiKey: String, model: String) {
-        prefs?.edit().apply {
+        prefs.edit().apply {
             putString("provider_name", name)
             putString("provider_base_url", baseUrl)
             putString("provider_api_key", apiKey)
             putString("provider_model", model)
-            apply()
-        } ?: run {
-            // Fallback: write to regular SharedPreferences
-            context.getSharedPreferences("jarvis_prefs", android.content.Context.MODE_PRIVATE)
-                .edit().apply {
-                    putString("provider_name", name)
-                    putString("provider_base_url", baseUrl)
-                    putString("provider_api_key", apiKey)
-                    putString("provider_model", model)
-                    apply()
-                }
         }
     }
 

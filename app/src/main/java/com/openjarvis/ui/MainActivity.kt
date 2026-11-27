@@ -1,10 +1,10 @@
 package com.openjarvis.ui
 
-import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -36,6 +36,15 @@ class MainActivity : ComponentActivity() {
 
         graphifyRepo = GraphifyRepository(this)
         agentCore = AgentCore(this)
+
+        // Check if onboarding is complete; if not, show onboarding first
+        val onboardingComplete = getSharedPreferences("jarvis_prefs", MODE_PRIVATE)
+            .getBoolean("onboarding_complete", false)
+        if (!onboardingComplete) {
+            startActivity(Intent(this, OnboardingActivity::class.java))
+            finish()
+            return
+        }
 
         setContent {
             OpenJarvisTheme {
@@ -69,97 +78,3 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    private fun isAccessibilityServiceEnabled(): Boolean {
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-
-        val componentName = ComponentName(this, JarvisAccessibilityService::class.java)
-        return enabledServices.contains(componentName.flattenToString())
-    }
-
-    private fun startAccessibilitySettings() {
-        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-    }
-
-    private fun startOverlaySettings() {
-        startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            android.net.Uri.parse("package:$packageName")))
-    }
-
-    private fun startOverlayService() {
-        startService(Intent(this, OverlayService::class.java))
-        Toast.makeText(this, "Jarvis is active", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun openSettings() {
-        startActivity(Intent(this, SettingsActivity::class.java))
-    }
-}
-
-@Composable
-fun PermissionScreen(
-    accessibilityEnabled: Boolean,
-    overlayEnabled: Boolean,
-    onEnableAccessibility: () -> Unit,
-    onEnableOverlay: () -> Unit
-) {
-    val primaryColor = com.openjarvis.ui.theme.VoidColor.Violet
-    val onSurfaceColor = com.openjarvis.ui.theme.VoidColor.TextPrimary
-    val onSurfaceVariantColor = com.openjarvis.ui.theme.VoidColor.TextSecondary
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Permission Required",
-            style = MaterialTheme.typography.headlineMedium,
-            color = onSurfaceColor
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Open Jarvis needs accessibility and overlay permissions to control your device.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = onSurfaceVariantColor,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        if (!accessibilityEnabled) {
-            Button(
-                onClick = onEnableAccessibility,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Enable Accessibility Service")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        if (!overlayEnabled) {
-            Button(
-                onClick = onEnableOverlay,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Enable Overlay Permission")
-            }
-        }
-
-        if (accessibilityEnabled && overlayEnabled) {
-            Text(
-                text = "Jarvis is active",
-                style = MaterialTheme.typography.titleMedium,
-                color = primaryColor
-            )
-        }
-    }
-}

@@ -26,18 +26,18 @@ import androidx.compose.ui.unit.sp
 import com.openjarvis.ui.theme.VoidColor
 
 class OnboardingActivity : ComponentActivity() {
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        
         if (isOnboardingComplete()) {
             finish()
             return
         }
-
+        
         setContent { OnboardingScreen(onComplete = { finish() }) }
     }
-
+    
     private fun isOnboardingComplete(): Boolean {
         val prefs = getSharedPreferences("jarvis_prefs", Context.MODE_PRIVATE)
         return prefs.getBoolean("onboarding_complete", false)
@@ -49,7 +49,7 @@ class OnboardingActivity : ComponentActivity() {
 fun OnboardingScreen(onComplete: () -> Unit) {
     var currentScreen by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
-
+    
     Scaffold(
         containerColor = VoidColor.Void950
     ) { padding ->
@@ -57,25 +57,38 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             when (currentScreen) {
-                0 -> WelcomeScreen(onGetStarted = { currentScreen++ })
-                1 -> ProviderScreen(
-                    onBack = { currentScreen-- },
-                    onContinue = { currentScreen++ },
+                0 -> WelcomeScreen(
+                    onGetStarted = { currentScreen = 1 }
+                )
+                1 -> PermissionsScreen(
+                    onBack = { currentScreen = 0 },
+                    onContinue = { currentScreen = 2 }
+                )
+                2 -> ProviderScreen(
+                    onBack = { currentScreen = 1 },
+                    onContinue = { currentScreen = 3 },
                     onSkip = { currentScreen = 3 }
                 )
-                2 -> StTTScreen(
-                    onBack = { currentScreen-- },
-                    onContinue = { currentScreen++ }
+                3 -> TryItScreen(
+                    onBack = { currentScreen = 2 },
+                    onSuccess = {
+                        completeOnboarding(context)
+                        onComplete()
+                    }
                 )
-                3 -> ReadyScreen(onStart = { completeOnboarding(context); onComplete() })
+                4 -> ReadyScreen(onStart = {
+                    completeOnboarding(context)
+                    onComplete()
+                })
             }
-
+            
             if (currentScreen in 1..3) {
                 Spacer(modifier = Modifier.weight(1f))
-
+                
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -87,7 +100,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     } else {
                         Spacer(modifier = Modifier.width(1.dp))
                     }
-
+                    
                     if (currentScreen < 4) {
                         TextButton(onClick = { currentScreen++ }) {
                             Text("Skip", color = VoidColor.TextDisabled)
@@ -100,286 +113,314 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 }
 
 @Composable
-fun WelcomeScreen(onGetStarted: () -> Unit) {
+private fun WelcomeScreen(onGetStarted: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Spacer(modifier = Modifier.height(64.dp))
-
-        Image(
-            painter = painterResource(id = androidx.compose.R.drawable.ic_launcher_foreground),
-            contentDescription = "Open Jarvis",
-            modifier = Modifier.size(128.dp)
+        Text(
+            text = "OPEN\nJARVIS",
+            fontSize = 48.sp,
+            fontWeight = FontWeight.Bold,
+            color = VoidColor.Violet,
+            textAlign = TextAlign.Center,
+            lineHeight = 52.sp
         )
-
+        
         Spacer(modifier = Modifier.height(32.dp))
-
+        
         Text(
-            text = "Open Jarvis",
-            style = MaterialTheme.typography.headlineMedium,
-            color = VoidColor.Violet
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Your personal AI assistant for device control",
-            style = MaterialTheme.typography.bodyMedium,
-            color = VoidColor.TextSecondary,
+            text = "Your AI. Your Phone.\nYour Control.",
+            fontSize = 20.sp,
+            color = VoidColor.TextPrimary,
             textAlign = TextAlign.Center
         )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = "Give Jarvis a prompt.\nIt handles everything.",
+            fontSize = 14.sp,
+            color = VoidColor.TextDisabled,
+            textAlign = TextAlign.Center
+        )
+        
+        Spacer(modifier = Modifier.height(64.dp))
+        
         Button(
             onClick = onGetStarted,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = VoidColor.Violet
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(
+                text = "Get Started",
+                modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PermissionsScreen(onBack: () -> Unit, onContinue: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Text(
+            text = "Permissions",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = VoidColor.TextPrimary
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Jarvis needs a few permissions to control your device",
+            fontSize = 14.sp,
+            color = VoidColor.TextDisabled
+        )
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        PermissionRow("Accessibility Service", "Required to tap, type, and control apps")
+        PermissionRow("Overlay Permission", "Required to show the floating control pill")
+        PermissionRow("Notification Access", "Required to read and reply to messages")
+        
+        Spacer(modifier = Modifier.weight(1f))
+        
+        Button(
+            onClick = onContinue,
+            colors = ButtonDefaults.buttonColors(containerColor = VoidColor.Violet),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Get Started")
+            Text("Continue")
         }
     }
 }
 
 @Composable
-fun ProviderScreen(
-    onBack: () -> Unit,
-    onContinue: () -> Unit,
-    onSkip: () -> Unit
-) {
-    var selectedProvider by remember { mutableStateOf("Groq") }
+private fun PermissionRow(title: String, subtitle: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = VoidColor.Void800)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = VoidColor.Violet,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(title, fontWeight = FontWeight.Medium, color = VoidColor.TextPrimary)
+                Text(subtitle, fontSize = 12.sp, color = VoidColor.TextDisabled)
+            }
+        }
+    }
+}
 
+@Composable
+private fun ProviderScreen(onBack: () -> Unit, onContinue: () -> Unit, onSkip: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxSize()
     ) {
         Text(
-            text = "Select Provider",
-            style = MaterialTheme.typography.headlineSmall,
-            color = VoidColor.Violet
+            text = "Choose Your AI",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = VoidColor.TextPrimary
         )
-
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Connect an AI brain",
+            fontSize = 14.sp,
+            color = VoidColor.TextDisabled
+        )
+        
         Spacer(modifier = Modifier.height(24.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = VoidColor.Void900)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("Groq", style = MaterialTheme.typography.bodyLarge, color = if (selectedProvider == "Groq") VoidColor.Violet else VoidColor.TextSecondary)
-                Text("Fast inference with Llama models", style = MaterialTheme.typography.bodySmall, color = VoidColor.TextSecondary)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = VoidColor.Void900)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("Google Gemini", style = MaterialTheme.typography.bodyLarge, color = if (selectedProvider == "Google Gemini" || selectedProvider == "gemini") VoidColor.Violet else VoidColor.TextSecondary)
-                Text("Google's flash model", style = MaterialTheme.typography.bodySmall, color = VoidColor.TextSecondary)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = VoidColor.Void900)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("OpenRouter", style = MaterialTheme.typography.bodyLarge, color = if (selectedProvider == "OpenRouter") VoidColor.Violet else VoidColor.TextSecondary)
-                Text("Multiple models through one API", style = MaterialTheme.typography.bodySmall, color = VoidColor.TextSecondary)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = VoidColor.Void900)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("Anthropic Claude", style = MaterialTheme.typography.bodyLarge, color = if (selectedProvider == "Anthropic Claude") VoidColor.Violet else VoidColor.TextSecondary)
-                Text("Safe and reliable Claude models", style = MaterialTheme.typography.bodySmall, color = VoidColor.TextSecondary)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = VoidColor.Void900)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("OpenAI", style = MaterialTheme.typography.bodyLarge, color = if (selectedProvider == "OpenAI") VoidColor.Violet else VoidColor.TextSecondary)
-                Text("GPT-4 and GPT-3.5", style = MaterialTheme.typography.bodySmall, color = VoidColor.TextSecondary)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
+        
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TextButton(onClick = onBack) {
-                Text("Back", color = VoidColor.TextDisabled)
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            TextButton(onClick = onSkip) {
-                Text("Skip", color = VoidColor.TextDisabled)
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            TextButton(onClick = onContinue) {
-                Text("Continue", color = VoidColor.Violet)
-            }
+            ProviderCard("Groq", "Free · Fast", Modifier.weight(1f))
+            ProviderCard("Gemini", "Free tier", Modifier.weight(1f))
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ProviderCard("OpenRouter", "Free models", Modifier.weight(1f))
+            ProviderCard("Local", "Offline", Modifier.weight(1f))
+        }
+        
+        Spacer(modifier = Modifier.weight(1f))
+        
+        Button(
+            onClick = onContinue,
+            colors = ButtonDefaults.buttonColors(containerColor = VoidColor.Violet),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Continue")
         }
     }
 }
 
 @Composable
-fun StTTScreen(
-    onBack: () -> Unit,
-    onContinue: () -> Unit
-) {
+private fun ProviderCard(name: String, subtitle: String, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = VoidColor.Void800),
+        border = BorderStroke(1.dp, VoidColor.BorderSubtle)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(name, fontWeight = FontWeight.Bold, color = VoidColor.TextPrimary)
+            Text(subtitle, fontSize = 12.sp, color = VoidColor.TextDisabled)
+        }
+    }
+}
+
+@Composable
+private fun TryItScreen(onBack: () -> Unit, onSuccess: () -> Unit) {
+    var command by remember { mutableStateOf("Open Chrome and search for weather") }
+    var isRunning by remember { mutableStateOf(false) }
+    
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxSize()
     ) {
         Text(
-            text = "Text-to-Speech Setup",
-            style = MaterialTheme.typography.headlineSmall,
-            color = VoidColor.Violet
+            text = "Try It",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = VoidColor.TextPrimary
         )
-
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Let's try your first prompt",
+            fontSize = 14.sp,
+            color = VoidColor.TextDisabled
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        OutlinedTextField(
+            value = command,
+            onValueChange = { command = it },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = VoidColor.Violet,
+                unfocusedBorderColor = VoidColor.BorderSubtle
+            ),
+            placeholder = { Text("Type your command...") }
+        )
+        
         Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Configure speech recognition and synthesis settings",
-            style = MaterialTheme.typography.bodyMedium,
-            color = VoidColor.TextSecondary,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = VoidColor.Void900)
+        
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(VoidColor.Void900, RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("Push to Talk", style = MaterialTheme.typography.bodyLarge, color = if (sttMode == "Push to Talk") VoidColor.Violet else VoidColor.TextSecondary)
-                Text("Brief press to speak", style = MaterialTheme.typography.bodySmall, color = VoidColor.TextSecondary)
+            if (isRunning) {
+                CircularProgressIndicator(color = VoidColor.Violet)
+            } else {
+                Text(
+                    "Press Run to execute",
+                    color = VoidColor.TextDisabled
+                )
             }
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = VoidColor.Void900)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("Continuous Listening", style = MaterialTheme.typography.bodyLarge, color = if (sttMode == "Continuous") VoidColor.Violet else VoidColor.TextSecondary)
-                Text("Always listening for commands", style = MaterialTheme.typography.bodySmall, color = VoidColor.TextSecondary)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Button(
+            onClick = {
+                isRunning = true
+                kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    kotlinx.coroutines.delay(2000)
+                    isRunning = false
+                    onSuccess()
+                }
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = VoidColor.Violet),
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            enabled = !isRunning
         ) {
-            TextButton(onClick = onBack) {
-                Text("Back", color = VoidColor.TextDisabled)
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            TextButton(onClick = onContinue) {
-                Text("Continue", color = VoidColor.Violet)
-            }
+            Text(if (isRunning) "Running..." else "Run This")
         }
     }
 }
 
 @Composable
-fun ReadyScreen(onStart: () -> Unit) {
+private fun ReadyScreen(onStart: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Spacer(modifier = Modifier.height(64.dp))
-
-        Image(
-            painter = painterResource(id = androidx.compose.R.drawable.ic_launcher_foreground),
-            contentDescription = "Open Jarvis",
-            modifier = Modifier.size(128.dp)
+        Icon(
+            Icons.Default.CheckCircle,
+            contentDescription = null,
+            tint = VoidColor.Violet,
+            modifier = Modifier.size(64.dp)
         )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
         Text(
-            text = "Ready to go!",
-            style = MaterialTheme.typography.headlineMedium,
-            color = VoidColor.Violet
+            text = "You're Ready",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = VoidColor.TextPrimary
         )
-
+        
         Spacer(modifier = Modifier.height(8.dp))
-
+        
         Text(
-            text = "Open Jarvis is ready for use",
-            style = MaterialTheme.typography.bodyMedium,
-            color = VoidColor.TextSecondary,
-            textAlign = TextAlign.Center
+            text = "Jarvis is ready to help you",
+            fontSize = 14.sp,
+            color = VoidColor.TextDisabled
         )
-
+        
         Spacer(modifier = Modifier.height(32.dp))
-
+        
         Button(
             onClick = onStart,
-            modifier = Modifier.fillMaxWidth()
+            colors = ButtonDefaults.buttonColors(containerColor = VoidColor.Violet),
+            shape = RoundedCornerShape(12.dp)
         ) {
-            Text("Start Using Jarvis")
+            Text(
+                text = "Start Using Jarvis",
+                modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp)
+            )
         }
     }
 }
 
 private fun completeOnboarding(context: Context) {
-    val prefs = context.getSharedPreferences("jarvis_prefs", Context.MODE_PRIVATE).edit()
-    prefs.putBoolean("onboarding_complete", true)
-    prefs.apply()
+    context.getSharedPreferences("jarvis_prefs", Context.MODE_PRIVATE)
+        .edit()
+        .putBoolean("onboarding_complete", true)
+        .apply()
 }
