@@ -38,6 +38,7 @@ import com.openjarvis.ui.theme.VoidColor
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onSaveProvider: (String, String, String, String) -> Unit,
+    onTestConnection: (String, String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedProvider by remember { mutableStateOf("Groq") }
@@ -134,7 +135,8 @@ fun SettingsScreen(
                         onSaveProvider(name, url, key, mdl)
                         lastSaved = System.currentTimeMillis()
                         savedVisible = true
-                    }
+                    },
+                    onTestConnection = onTestConnection
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -457,7 +459,8 @@ private fun TestConnectionButton(
     apiKey: String,
     baseUrl: String,
     model: String,
-    onSave: (String, String, String, String) -> Unit
+    onSave: (String, String, String, String) -> Unit,
+    onTestConnection: (String, String, String) -> Unit
 ) {
     var testState by remember { mutableStateOf<TestState>(TestState.Idle) }
     
@@ -481,8 +484,7 @@ private fun TestConnectionButton(
     
     OutlinedButton(
         onClick = {
-            onSave("Groq", baseUrl, apiKey, model)
-            testState = TestState.Success(150)
+            onTestConnection(apiKey, baseUrl, model)
         },
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),

@@ -78,3 +78,32 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun openSettings() {
+        startActivity(Intent(this, SettingsActivity::class.java))
+    }
+
+    private fun testConnection(apiKey: String, baseUrl: String, model: String) {
+        val adapter = UniversalAdapter(this)
+        lifecycleScope.launch(Dispatchers.IO) {
+            val result = adapter.testConnection()
+            when (result) {
+                is Result.Success -> {
+                    val ms = result.getOrNull() ?: 0
+                    runOnUiThread {
+                        Toast.makeText(this, "Connected — ${ms}ms", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                is Result.Error -> {
+                    val error = result.getOrThrow()
+                    runOnUiThread {
+                        Toast.makeText(this, "Connection failed: ${error.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PermissionScreen(
