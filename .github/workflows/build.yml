@@ -1,9 +1,10 @@
-name: Build APK
+name: Build and Test
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -28,24 +29,21 @@ jobs:
           cache-disabled: true
 
       - name: Generate Gradle wrapper
-        run: |
-          GRADLE_HOME="/home/runner/work/_temp/.gradle-actions/gradle-installations/installs/gradle-8.5"
-          export PATH="$GRADLE_HOME/bin:$PATH"
-          $GRADLE_HOME/bin/gradle wrapper --gradle-version 8.5
+        run: gradle wrapper --gradle-version 8.5
 
       - name: Assemble Debug APK
         run: ./gradlew assembleDebug --stacktrace --continue
 
-      - name: Rename APK
-        run: |
-          mkdir -p output
-          mv app/build/outputs/apk/debug/app-debug.apk output/open-jarvis.apk
+      - name: CI Gate: Manifest vs Dex check
+        run: python3 .github/workflows/manifest_dex_gate.py
+        env:
+          ANDROID_APK: app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
           name: open-jarvis-apk
-          path: output/open-jarvis.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
 
       - name: Create GitHub Release
         id: create-release
@@ -70,12 +68,68 @@ jobs:
           asset_name: open-jarvis.apk
           asset_content_type: application/vnd.android.package-archive
 
-      - name: Upload build logs on failure
-        if: failure()
+  smoke-test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Android SDK
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          target-arch: x86_64
+          profile: pixel2
+
+      - name: Install APK
+        run: adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Launch app and verify no crash
+        run: |
+          adb logcat -c
+          adb shell am start -W -n com.openjarvis/com.openjarvis.ui.MainActivity
+          sleep 8
+          PID=$(adb shell pidof com.openjarvis)
+          if [ -z "$PID" ]; then
+            echo "ERROR: Process died after launch!"
+            exit 1
+          fi
+          echo "Process alive after launch: $PID"
+
+          # Enable accessibility service
+          adb shell settings put secure enabled_accessibility_services com.openjarvis/com.openjarvis.accessibility.JarvisAccessibilityService
+          adb shell settings put secure accessibility_enabled 1
+          sleep 5
+
+          # Check process is still alive
+          PID=$(adb shell pidof com.openjarvis)
+          if [ -z "$PID" ]; then
+            echo "ERROR: Process died after enabling accessibility service!"
+            exit 1
+          fi
+          echo "Process still alive after accessibility: $PID"
+
+          # Check logcat for crashes
+          CRASH_LOG=$(adb logcat -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|ClassNotFoundException" | grep -i "com.openjarvis" | head -5 || true)
+          if [ -n "$CRASH_LOG" ]; then
+            echo "ERROR: Crash found in logcat!"
+            echo "$CRASH_LOG"
+            exit 1
+          fi
+          echo "No crashes found in logcat"
+
+      - name: Take screenshot
+        run: adb exec-out screencap -p > screenshot.png
+
+      - name: Upload screenshot
         uses: actions/upload-artifact@v4
         with:
-          name: build-logs
-          path: |
-            app/build/reports/
-            .gradle/
-            **/*.log
+          name: launch-screenshot
+          path: screenshot.png
+
+      - name: Upload logcat
+        uses: actions/upload-artifact@v4
+        with:
+          name: logcat
+          path: logcat.txt
