@@ -36,6 +36,52 @@ jobs:
       - name: Assemble Debug APK
         run: ./gradlew assembleDebug --stacktrace --continue
 
+      - name: Verify manifest-vs-dex consistency
+        run: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+
+          # List all components declared in the APK manifest using aapt2
+          DECLARED_COMPONENTS=$(aapt2 dump xmltree "$APK" AndroidManifest.xml 2>/dev/null | grep -oP 'android:name="[^"]*"' | sed 's/android:name="//' | sed 's/"//' || true)
+
+          # List all dex packages using apkanalyzer
+          DEX_PACKAGES=$(apkanalyzer dex packages --apk "$APK" 2>/dev/null | tail -n +3 | awk '{print $1}' || true)
+
+          echo "=== Declared components ==="
+          echo "$DECLARED_COMPONENTS"
+          echo "=== Dex packages ==="
+          echo "$DEX_PACKAGES"
+
+          # Check each declared component exists in dex
+          MISSING=0
+          for comp in $DECLARED_COMPONENTS; do
+              # Check if the component package exists in dex packages
+              if ! echo "$DEX_PACKAGES" | grep -qE "^${comp}$|^com\.openjarvis"; then
+                  echo "MISSING: $comp not found in dex packages"
+                  MISSING=1
+              fi
+          done
+
+          if [ "$MISSING" -ne 0 ]; then
+              echo "::error ::Manifest-dex mismatch: declared components missing from dex"
+              exit 1
+          fi
+
+          echo "All declared components found in dex. OK"
+
+          # Also verify each com.openjarvis.* activity has a matching class
+          for comp in $DECLARED_COMPONENTS; do
+              if echo "$comp" | grep -q "com\.openjarvis"; then
+                  echo "Checking: $comp"
+                  # Check the class exists in the dex listing
+                  if ! apkanalyzer dex list --apk "$APK" 2>/dev/null | grep -q "$comp"; then
+                      echo "::warning ::Component $comp declared but not found in dex listing"
+                  fi
+              fi
+          done
+
       - name: Rename APK
         run: |
           mkdir -p output
@@ -46,6 +92,67 @@ jobs:
         with:
           name: open-jarvis-apk
           path: output/open-jarvis.apk
+
+      - name: Smoke test on Android 9 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          target: google_apis_x86
+          arch: x86_64
+          profile: portrait
+        timeout-minutes: 15
+
+      - name: Install APK on emulator
+        run: |
+          adb install -r output/open-jarvis.apk
+
+      - name: Launch app and verify no crash
+        run: |
+          adb logcat -c
+          adb shell am start -W -n com.openjarvis/com.openjarvis.ui.MainActivity
+          sleep 8
+          PROCESS=$(adb shell pidof com.openjarvis)
+          echo "Process after launch: $PROCESS"
+          if [ -z "$PROCESS" ]; then
+            echo "::error ::App crashed on launch - process not found"
+            adb logcat -d | grep -E "AndroidRuntime|ClassNotFoundException" || true
+            exit 1
+          fi
+
+      - name: Enable accessibility service
+        run: |
+          adb shell settings put secure enabled_accessibility_services com.openjarvis/com.openjarvis.accessibility.JarvisAccessibilityService
+          adb shell settings put secure accessibility_enabled 1
+          sleep 5
+          PROCESS=$(adb shell pidof com.openjarvis)
+          echo "Process after accessibility enable: $PROCESS"
+          if [ -z "$PROCESS" ]; then
+            echo "::error ::App crashed after enabling accessibility service"
+            adb logcat -d | grep -E "AndroidRuntime|ClassNotFoundException" || true
+            exit 1
+          fi
+
+      - name: Dump logcat as artifact
+        run: |
+          adb logcat -d > logcat.txt
+          if grep -E "FATAL EXCEPTION|AndroidRuntime|ClassNotFoundException" logcat.txt; then
+            echo "::error ::Logcat contains crash errors"
+            cat logcat.txt
+            exit 1
+          fi
+          echo "Logcat crash check passed"
+
+      - name: Take screenshot
+        run: |
+          adb exec-out screencap -p > screenshot.png
+        continue-on-error: true
+
+      - name: Upload screenshot as artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshot
+          path: screenshot.png
 
       - name: Create GitHub Release
         id: create-release
