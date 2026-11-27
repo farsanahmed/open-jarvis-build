@@ -7,25 +7,34 @@ import com.openjarvis.llm.providers.*
 import com.openjarvis.local.ModelManager
 
 class UniversalAdapter(private val context: Context) {
-    
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
-    
-    private val prefs = EncryptedSharedPreferences.create(
-        context,
-        "jarvis_encrypted_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
-    
+
+    private var masterKey: MasterKey? = null
+    private var prefs: android.content.SharedPreferences? = null
+
+    init {
+        try {
+            masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            prefs = EncryptedSharedPreferences.create(
+                context,
+                "jarvis_encrypted_prefs",
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (e: Exception) {
+            // Keystore failure - fall back to regular SharedPreferences
+            prefs = context.getSharedPreferences("jarvis_prefs", android.content.Context.MODE_PRIVATE)
+        }
+    }
+
     fun getActiveProvider(): LLMProvider {
-        val name = prefs.getString("provider_name", "Groq") ?: "Groq"
-        val baseUrl = prefs.getString("provider_base_url", "") ?: ""
-        val apiKey = prefs.getString("provider_api_key", "") ?: ""
-        val model = prefs.getString("provider_model", "") ?: ""
-        
+        val name = prefs?.getString("provider_name", "Groq") ?: "Groq"
+        val baseUrl = prefs?.getString("provider_base_url", "") ?: ""
+        val apiKey = prefs?.getString("provider_api_key", "") ?: ""
+        val model = prefs?.getString("provider_model", "") ?: ""
+
         return when (name) {
             "Groq" -> GroqProvider(apiKey, model.ifBlank { "llama-3.1-70b-versatile" })
             "Google Gemini", "gemini" -> GeminiProvider(apiKey, model.ifBlank { "gemini-1.5-flash" })
@@ -42,16 +51,16 @@ class UniversalAdapter(private val context: Context) {
             else -> CustomProvider(baseUrl, apiKey, model.ifBlank { "gpt-4o-mini" })
         }
     }
-    
+
     suspend fun complete(
         systemPrompt: String,
         userMessage: String
     ): Result<String> = getActiveProvider().complete(systemPrompt, userMessage)
-    
+
     suspend fun testConnection(): Result<Long> = getActiveProvider().testConnection()
-    
+
     fun saveSettings(name: String, baseUrl: String, apiKey: String, model: String) {
-        prefs.edit().apply {
+        prefs?.edit().apply {
             putString("provider_name", name)
             putString("provider_base_url", baseUrl)
             putString("provider_api_key", apiKey)
@@ -59,12 +68,12 @@ class UniversalAdapter(private val context: Context) {
             apply()
         }
     }
-    
-    fun getProviderName(): String = prefs.getString("provider_name", "Groq") ?: "Groq"
-    
+
+    fun getProviderName(): String = prefs?.getString("provider_name", "Groq") ?: "Groq"
+
     companion object {
         private var modelManager: ModelManager? = null
-        
+
         val AVAILABLE_PROVIDERS = listOf(
             "Groq",
             "Google Gemini",
@@ -74,21 +83,21 @@ class UniversalAdapter(private val context: Context) {
             "Ollama (Local)",
             "Local (LlamaCpp)"
         )
-        
+
         fun getModelManager(context: Context): ModelManager {
             return modelManager ?: synchronized(this) {
                 modelManager ?: ModelManager(context.applicationContext).also { modelManager = it }
             }
         }
-        
+
         fun isLocalModelLoaded(): Boolean {
             return modelManager?.state?.value is ModelManager.ModelState.Loaded
         }
-        
+
         suspend fun loadLocalModel(tier: ModelManager.ModelTier): Result<Unit> {
             return modelManager?.loadModel(tier) ?: Result.failure(Exception("ModelManager not initialized"))
         }
-        
+
         fun getDefaultModel(provider: String): String = when (provider) {
             "Groq" -> "llama-3.1-70b-versatile"
             "Google Gemini" -> "gemini-1.5-flash"
