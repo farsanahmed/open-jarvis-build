@@ -51,9 +51,9 @@ jobs:
 
       - name: Assemble Debug APK
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_STORE_PW: ${{ secrets.KS_STORE_PW }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KS_KEY_PW: ${{ secrets.KS_KEY_PW }}
         run: ./gradlew assembleDebug --stacktrace --continue
 
       - name: JVM unit tests
