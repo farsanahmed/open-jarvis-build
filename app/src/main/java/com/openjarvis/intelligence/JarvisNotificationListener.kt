@@ -4,6 +4,7 @@ import android.app.Notification
 import android.content.pm.PackageManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.openjarvis.accessibility.JarvisAccessibilityService
 import com.openjarvis.graphify.GraphifyRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +40,16 @@ class JarvisNotificationListener : NotificationListenerService() {
         fun shouldProcessNotification(packageName: String): Boolean {
             return packageName !in PRIVACY_PROTECTED_APPS
         }
+    private val messagingApps = listOf(
+        "com.whatsapp",
+        "com.google.android.apps.messaging",
+        "com.samsung.android.messaging",
+        "com.instagram.android",
+        "com.facebook.orca",
+        "org.telegram.messenger",
+        "com.slack",
+        "com.discord"
+    )
     }
     
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -150,16 +161,4 @@ class JarvisNotificationListener : NotificationListenerService() {
         val sender: String?
     )
     
-    companion object {
-        private val messagingApps = listOf(
-            "com.whatsapp",
-            "com.google.android.apps.messaging",
-            "com.samsung.android.messaging",
-            "com.instagram.android",
-            "com.facebook.orca",
-            "org.telegram.messenger",
-            "com.slack",
-            "com.discord"
-        )
-    }
 }

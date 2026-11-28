@@ -27,6 +27,30 @@ class GraphifyRepository(context: Context) {
         }
     }
 
+    /** Records a provider failure so the fallback chain can prefer healthier providers. */
+    suspend fun logProviderFailure(provider: String, reason: String) = withContext(Dispatchers.IO) {
+        taskNodeDao.insert(
+            TaskNode(
+                command = "provider_failure",
+                result = "failed: $reason",
+                providerUsed = provider,
+                latencyMs = 0
+            )
+        )
+    }
+
+    /** Records an intercepted notification (metadata only, never the body). */
+    suspend fun logNotification(summary: String) = withContext(Dispatchers.IO) {
+        taskNodeDao.insert(
+            TaskNode(
+                command = "notification",
+                result = summary.take(500),
+                providerUsed = null,
+                latencyMs = 0
+            )
+        )
+    }
+
     suspend fun logTask(
         command: String,
         result: String,

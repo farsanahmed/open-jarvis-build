@@ -77,7 +77,7 @@ class AutomationManager(private val context: Context) {
             "automation_command" to automation.command
         )
         
-        val request = when (val schedule = automation.schedule) {
+        val request: WorkRequest = when (val schedule = automation.schedule) {
             is AutomationSchedule.Daily -> {
                 PeriodicWorkRequestBuilder<AutomationWorker>(
                     24, TimeUnit.HOURS,

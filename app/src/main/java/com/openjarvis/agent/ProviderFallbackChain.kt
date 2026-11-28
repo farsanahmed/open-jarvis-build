@@ -32,7 +32,7 @@ class ProviderFallbackChain(private val context: Context) {
         for ((provider, name) in providers) {
             if (isInCooldown(name)) continue
             
-            val result = runCatching { provider.complete(system, user) }
+            val result = provider.complete(system, user)
             
             if (result.isSuccess) {
                 return result
