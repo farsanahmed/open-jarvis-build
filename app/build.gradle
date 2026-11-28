@@ -60,6 +60,14 @@ android {
         jvmTarget = '17'
     }
 
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged resources and assets to read
+            // res/ and assets/ from the app under test.
+            includeAndroidResources = true
+        }
+    }
+
     buildFeatures {
         buildConfig true
         compose true
