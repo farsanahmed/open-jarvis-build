@@ -38,6 +38,8 @@ class AgentCore(private val context: Context) {
     private var workingMemory = TaskWorkingMemory()
     private val scope = CoroutineScope(Dispatchers.IO)
     private val taskMutex = Mutex()
+    private val skillEngine = com.openjarvis.skills.SkillEngine(context)
+    private var usedSkill: com.openjarvis.skills.Skill? = null
 
     private val _state = MutableStateFlow<AgentState>(AgentState.Idle)
     val state: StateFlow<AgentState> = _state
@@ -123,7 +125,23 @@ fun executeTask(cleanCommand: String) {
                     }
                     
                     _state.value = AgentState.Running("analyzing task...")
-                
+
+                // A matching skill is a deterministic, verified action sequence:
+                // run it instead of asking the model to re-derive the steps.
+                skillEngine.ensureLoaded()
+                val skill = skillEngine.findMatch(cleanCommand)
+                usedSkill = skill
+                if (skill != null) {
+                    _state.value = AgentState.Running("running skill ${skill.name}...")
+                    val skillActions = skill.actionTemplate
+                    executeActions(skillActions)
+                    skillEngine.recordUsage(skill.id, true)
+                    graphifyRepo.logTask(cleanCommand, "skill: ${skill.name}", getCurrentProviderName(), 0)
+                    analysisEngine.analyzeLastTask()
+                    _state.value = AgentState.Done("Skill ${skill.name} completed")
+                    return@withLock
+                }
+
                 val plan = taskRouter.analyze(cleanCommand)
                 
                 _state.value = AgentState.Running("reading screen...")
@@ -199,6 +217,7 @@ fun executeTask(cleanCommand: String) {
                             else -> error.message ?: "Unknown error"
                         }
                         _state.value = AgentState.Error(msg)
+                        skill?.let { skillEngine.recordUsage(it.id, false) }
                         graphifyRepo.logTask(cleanCommand, "failed: $msg", "", 0)
                     }
                 )

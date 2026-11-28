@@ -111,6 +111,11 @@ class SkillEngine(private val context: Context) {
         )
     }
     
+    /** Loads the built-in and user skills once, on first use. */
+    suspend fun ensureLoaded() {
+        if (!skillsLoaded) loadSkills()
+    }
+
     fun findMatch(command: String): Skill? {
         val lower = command.lowercase()
         
