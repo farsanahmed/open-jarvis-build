@@ -26,13 +26,13 @@ import org.robolectric.annotation.Config
 @Config(sdk = [28])
 class SmokeRobolectricTest {
 
-    private fun launchActivity(clazz: Class<*>) {
+    private fun launchActivity(clazz: Class<out android.app.Activity>) {
         val controller = Robolectric.buildActivity(clazz)
         controller.create()
         controller.start()
         controller.resume()
         controller.visible()
-        assertNotNull("activity did not build: ${clazz.simpleName}", controller.get())
+        org.junit.Assert.assertNotNull("activity did not build: ${clazz.simpleName}", controller.get())
         controller.pause()
         controller.stop()
         controller.destroy()
