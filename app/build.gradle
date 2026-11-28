@@ -19,10 +19,11 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    def keystorePath = System.getenv("KEYSTORE_PATH")
+
     signingConfigs {
-        release {
-            def keystorePath = System.getenv("KEYSTORE_PATH")
-            if (keystorePath != null && !keystorePath.isBlank()) {
+        if (keystorePath != null && !keystorePath.isBlank()) {
+            release {
                 storeFile file(keystorePath)
                 storePassword System.getenv("KS_STORE_PW")
                 keyAlias System.getenv("KEY_ALIAS")
@@ -36,13 +37,17 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            if (keystorePath != null && !keystorePath.isBlank()) {
+                signingConfig signingConfigs.release
+            }
         }
         debug {
             debuggable true
             // Signed with the stable release key when it is available, so builds
             // install over each other without uninstalling.
-            signingConfig signingConfigs.release
+            if (keystorePath != null && !keystorePath.isBlank()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
