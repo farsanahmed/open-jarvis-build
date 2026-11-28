@@ -2,13 +2,18 @@ package com.openjarvis.graphify
 
 import org.junit.Test
 import org.junit.Assert.*
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.Dispatchers
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [28])
 class AnalysisEngineTest {
 
     @Test
-    fun `3 identical sequences should create PatternNode with confidence > 0`() = runTest(Dispatchers.IO) {
+    fun `3 identical sequences should create PatternNode with positive confidence`() = runTest(Dispatchers.IO) {
         val context = testContext()
         val engine = AnalysisEngine(context)
         val repo = GraphifyRepository(context)
@@ -85,6 +90,6 @@ class AnalysisEngineTest {
     }
 
     private fun testContext(): android.content.Context {
-        return androidx.compose.ui.platform.LocalContext.current.applicationContext
+        return androidx.test.core.app.ApplicationProvider.getApplicationContext()
     }
 }
