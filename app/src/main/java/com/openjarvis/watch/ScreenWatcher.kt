@@ -118,7 +118,7 @@ class ScreenWatcher(private val context: Context, private val agentCore: com.ope
     
     private fun getCurrentScreenText(): String {
         return try {
-            screenReader.extractAllText()
+            screenReader?.extractAllText() ?: ""
         } catch (e: Exception) {
             ""
         }

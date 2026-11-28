@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -17,8 +16,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -169,18 +168,16 @@ private fun CollapsedPill(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var glowAlpha by remember { mutableFloatStateOf(0.15f) }
-
-    LaunchedEffect(Unit) {
-        rememberInfiniteTransition(label = "glow").animateFloat(
-            initialValue = 0.15f,
-            targetValue = 0.45f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(3000, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            )
-        ) { glowAlpha = it }
-    }
+    val glowTransition = rememberInfiniteTransition(label = "glow")
+    val glowAlpha by glowTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.45f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
 
     val statusScale by rememberInfiniteTransition(label = "status").animateFloat(
         initialValue = 0.75f,
@@ -602,7 +599,7 @@ private fun InputRowWithVoice(
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowUp,
+                    imageVector = Icons.Filled.KeyboardArrowUp,
                     contentDescription = "Send",
                     tint = Color.White,
                     modifier = Modifier.size(16.dp)
@@ -614,7 +611,7 @@ private fun InputRowWithVoice(
 
 @Composable
 private fun DividerLine() {
-    Divider(
+    HorizontalDivider(
         modifier = Modifier.fillMaxWidth(),
         thickness = 1.dp,
         color = VoidColor.Void600
