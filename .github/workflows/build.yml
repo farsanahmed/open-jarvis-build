@@ -2,14 +2,20 @@ name: Build APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, '**']
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    name: Compile, gate and unit test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -28,54 +34,123 @@ jobs:
           cache-disabled: true
 
       - name: Generate Gradle wrapper
-        run: |
-          GRADLE_HOME="/home/runner/work/_temp/.gradle-actions/gradle-installations/installs/gradle-8.5"
-          export PATH="$GRADLE_HOME/bin:$PATH"
-          $GRADLE_HOME/bin/gradle wrapper --gradle-version 8.5
+        run: gradle wrapper --gradle-version 8.5
 
       - name: Assemble Debug APK
-        run: ./gradlew assembleDebug --stacktrace --continue
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: JVM unit tests
+        run: ./gradlew testDebugUnitTest --stacktrace
 
       - name: Rename APK
         run: |
           mkdir -p output
-          mv app/build/outputs/apk/debug/app-debug.apk output/open-jarvis.apk
+          cp app/build/outputs/apk/debug/app-debug.apk output/open-jarvis.apk
 
-      - name: Upload APK as artifact
+      - name: Manifest-vs-dex gate
+        run: |
+          chmod +x scripts/gate.sh
+          scripts/gate.sh output/open-jarvis.apk
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: open-jarvis-apk
           path: output/open-jarvis.apk
 
-      - name: Create GitHub Release
-        id: create-release
-        uses: actions/create-release@v1
-        with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: "OpenJarvis v1.0.${{ github.run_number }}"
-          body: |
-            Release for OpenJarvis build ${{ github.run_number }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload APK to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: output/open-jarvis.apk
-          asset_name: open-jarvis.apk
-          asset_content_type: application/vnd.android.package-archive
-
-      - name: Upload build logs on failure
-        if: failure()
+      - name: Upload unit test results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-logs
-          path: |
-            app/build/reports/
-            .gradle/
-            **/*.log
+          name: unit-test-results
+          path: app/build/reports/tests/testDebugUnitTest/
+
+  emulator:
+    name: Emulator smoke test (API ${{ matrix.api }})
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [28, 34]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.5
+          cache-disabled: true
+
+      - name: Generate Gradle wrapper
+        run: gradle wrapper --gradle-version 8.5
+
+      - name: Build test APKs
+        run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace
+
+      - name: Run smoke and all-screens tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: default
+          arch: x86_64
+          disable-animations: true
+          script: |
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb shell am force-stop com.openjarvis || true
+            adb logcat -c || true
+            adb shell monkey -p com.openjarvis -c android.intent.category.LAUNCHER 1 || true
+            sleep 8
+            adb shell pidof com.openjarvis
+            adb shell settings put secure enabled_accessibility_services com.openjarvis/com.openjarvis.accessibility.JarvisAccessibilityService || true
+            sleep 3
+            adb shell pidof com.openjarvis
+            adb logcat -d -v threadtime > logcat-api${{ matrix.api }}.txt || true
+            if grep -E "FATAL EXCEPTION|ClassNotFoundException|NoClassDefFoundError" logcat-api${{ matrix.api }}.txt; then
+              echo "SMOKE FAIL: fatal error in logcat"
+              exit 1
+            fi
+            adb shell screencap -p /sdcard/screen-api${{ matrix.api }}.png
+            adb pull /sdcard/screen-api${{ matrix.api }}.png screen-api${{ matrix.api }}.png
+            ./gradlew connectedDebugAndroidTest --stacktrace
+
+      - name: Upload logcat
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logcat-api-${{ matrix.api }}
+          path: logcat-api${{ matrix.api }}.txt
+
+      - name: Upload screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-api-${{ matrix.api }}
+          path: screen-api${{ matrix.api }}.png
+
+  release:
+    name: Publish release
+    runs-on: ubuntu-latest
+    needs: [build, emulator]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: open-jarvis-apk
+          path: output
+
+      - name: Publish release v1.0.${{ github.run_number }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: OpenJarvis v1.0.${{ github.run_number }}
+          prerelease: false
+          files: output/open-jarvis.apk
