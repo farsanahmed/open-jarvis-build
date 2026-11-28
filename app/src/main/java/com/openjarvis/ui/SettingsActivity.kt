@@ -3,60 +3,69 @@ package com.openjarvis.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.core.view.WindowCompat
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
-import com.openjarvis.R
-import com.openjarvis.ui.settings.SettingsScreen
+import androidx.compose.ui.unit.dp
 import com.openjarvis.ui.theme.OpenJarvisTheme
+import com.openjarvis.ui.theme.VoidColor
 
 class SettingsActivity : ComponentActivity() {
-    
-    private lateinit var masterKey: MasterKey
-    private lateinit var prefs: android.content.SharedPreferences
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        enableEdgeToEdge()
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        
-        masterKey = MasterKey.Builder(this)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        
-        prefs = EncryptedSharedPreferences.create(
-            this,
-            "jarvis_encrypted_prefs",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-        
+
         setContent {
             OpenJarvisTheme {
-                SettingsScreen(
-                    onNavigateBack = { finish() },
-                    onSaveProvider = { name, baseUrl, apiKey, model ->
-                        saveProviderSettings(name, baseUrl, apiKey, model)
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Settings",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = VoidColor.Violet
+                        )
+
+                        Divider(color = VoidColor.BorderSubtle)
+
+                        Text("Providers", style = MaterialTheme.typography.titleMedium)
+
+                        val providers = listOf(
+                            "Groq" to "llama-3.1-70b-versatile",
+                            "Google Gemini" to "gemini-1.5-flash",
+                            "OpenRouter" to "meta-llama/llama-3-8b-instruct:free",
+                            "Anthropic Claude" to "claude-haiku-4-20250514",
+                            "OpenAI" to "gpt-4o-mini"
+                        )
+
+                        providers.forEach { (name, model) ->
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = VoidColor.Void900)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text(name, style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        model,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = VoidColor.TextSecondary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
-        }
-    }
-    
-    private fun saveProviderSettings(name: String, baseUrl: String, apiKey: String, model: String) {
-        prefs.edit().apply {
-            putString("provider_name", name)
-            putString("provider_base_url", baseUrl)
-            putString("provider_api_key", apiKey)
-            putString("provider_model", model)
-            apply()
         }
     }
 }
