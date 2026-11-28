@@ -4,9 +4,9 @@ All results below come from CI runs, not from a device.
 
 | Test | Suite | Result |
 |---|---|---|
-| `builtinSkillsLoadFromAssets` | `SkillExecutionTest` (Robolectric) | NOT VERIFIED — added in `c4df642`, run in flight |
-| `triggerPhraseMatchesAndVariablesAreExtracted` | `SkillExecutionTest` | NOT VERIFIED — as above |
-| `unmatchedCommandReturnsNull` | `SkillExecutionTest` | NOT VERIFIED — as above |
+| `builtinSkillsLoadFromAssets` | `SkillExecutionTest` (Robolectric) | PASS (JVM) — run 46141819479, 7 skills loaded |
+| `triggerPhraseMatchesAndVariablesAreExtracted` | `SkillExecutionTest` | PASS (JVM) — run 46141819479 |
+| `unmatchedCommandReturnsNull` | `SkillExecutionTest` | PASS (JVM) — run 46141819479 |
 | `mainActivityStarts` | `SmokeRobolectricTest` | PARTIAL — Robolectric `Resources$NotFoundException` on a framework string id |
 | `settingsActivityStarts` | `SmokeRobolectricTest` | PASS (JVM) |
 | `onboardingActivityStarts` | `SmokeRobolectricTest` | PASS (JVM) |
@@ -17,4 +17,4 @@ All results below come from CI runs, not from a device.
 | `AnalysisEngineTest` (3 cases) | Robolectric + Room | PASS (JVM) |
 | `UnitSanityTest` (2 cases) | plain JUnit | PASS (JVM) |
 | manifest-vs-dex gate | `scripts/gate.sh` | PASS in CI |
-| API 28 / API 34 emulator smoke | Emulator jobs | FAIL — emulator never registers on adb; NOT VERIFIED |
+| API 28 / API 34 emulator smoke | Emulator jobs | FAIL — `/dev/kvm` is present and world-writable after the udev rule and the log shows `Starting emulator.`, but adb never registers the device. NOT VERIFIED |
