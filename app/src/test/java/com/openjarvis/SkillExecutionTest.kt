@@ -32,7 +32,7 @@ class SkillExecutionTest {
     fun triggerPhraseMatchesAndVariablesAreExtracted() {
         val engine = engine()
         kotlinx.coroutines.runBlocking { engine.ensureLoaded() }
-        val command = "send a message to Dad saying I will be late"
+        val command = "whatsapp Dad saying I will be late"
         val skill = engine.findMatch(command)
         assertNotNull("no skill matched: $command", skill)
         val vars = engine.extractVariables(command, skill!!)

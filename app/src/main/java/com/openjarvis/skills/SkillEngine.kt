@@ -21,20 +21,36 @@ class SkillEngine(private val context: Context) {
     suspend fun loadSkills() = withContext(Dispatchers.IO) {
         if (skillsLoaded) return@withContext
         
-        copyBuiltinSkillsIfNeeded()
-        
-        val jsonFiles = skillsDir.listFiles { _, name -> name.endsWith(".json") }
-        
         skillsCache.clear()
-        jsonFiles?.forEach { file ->
+
+        // Built-in skills are parsed straight from the APK assets: no copy to the
+        // files dir is needed, so a read-only or missing files dir cannot leave the
+        // engine with zero skills.
+        val builtinNames = try {
+            context.assets.list("skills")?.toList() ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+        builtinNames.forEach { name ->
             try {
-                val json = JSONObject(file.readText())
-                skillsCache.add(parseSkill(json))
+                context.assets.open("skills/$name").use { input ->
+                    skillsCache.add(parseSkill(JSONObject(input.readBytes().decodeToString())))
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
-        
+
+        // User-created skills live on disk.
+        val jsonFiles = skillsDir.listFiles { _, name -> name.endsWith(".json") }
+        jsonFiles?.forEach { file ->
+            try {
+                skillsCache.add(parseSkill(JSONObject(file.readText())))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         skillsLoaded = true
     }
     
