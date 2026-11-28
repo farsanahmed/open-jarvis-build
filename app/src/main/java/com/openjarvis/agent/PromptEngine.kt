@@ -4,7 +4,6 @@ import android.content.Context
 import com.openjarvis.graphify.GraphifyRepository
 import com.openjarvis.intelligence.TaskRouter
 import com.openjarvis.llm.UniversalAdapter
-import com.openjarvis.skills.SkillEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -13,8 +12,8 @@ import org.json.JSONObject
 class PromptEngine(private val context: Context) {
     
     private val graphifyRepo = GraphifyRepository(context)
-    private val skillsEngine = SkillEngine(context)
     private val taskRouter = TaskRouter(context)
+    private val adapter by lazy { UniversalAdapter(context) }
     private val conversationContext = ConversationContext()
     
     suspend fun analyzeIntent(prompt: String): Intent = withContext(Dispatchers.IO) {
@@ -192,7 +191,6 @@ Respond ONLY with JSON matching Intent schema.
     """.trimIndent()
     
     suspend fun analyze(prompt: String): JSONObject = withContext(Dispatchers.IO) {
-        val adapter = UniversalAdapter(context)
         val fullPrompt = "$systemPrompt\n\nUser prompt: $prompt"
         
         val result = adapter.complete(fullPrompt, prompt)
