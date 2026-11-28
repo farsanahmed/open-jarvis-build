@@ -19,39 +19,39 @@ class AutomationManager(private val context: Context) {
     val automationsFlow: StateFlow<List<Automation>> = _automationsFlow
     
     suspend fun loadAutomations() {
-        _automationsFlow.value = dao.getAll().map { it.toAutomation() }
+        _automationsFlow.value = dao.getAll()
     }
     
     suspend fun createAutomation(automation: Automation): String = withContext(Dispatchers.IO) {
-        dao.insert(automation.toEntity())
+        dao.insert(automation)
         
         scheduleAutomation(automation)
         
-        _automationsFlow.value = dao.getAll().map { it.toAutomation() }
+        _automationsFlow.value = dao.getAll()
         automation.id
     }
     
     suspend fun updateAutomation(automation: Automation) = withContext(Dispatchers.IO) {
-        dao.update(automation.toEntity())
+        dao.update(automation)
         cancelAutomation(automation.id)
         
         if (automation.enabled) {
             scheduleAutomation(automation)
         }
         
-        _automationsFlow.value = dao.getAll().map { it.toAutomation() }
+        _automationsFlow.value = dao.getAll()
     }
     
     suspend fun deleteAutomation(id: String) = withContext(Dispatchers.IO) {
         cancelAutomation(id)
         dao.delete(id)
-        _automationsFlow.value = dao.getAll().map { it.toAutomation() }
+        _automationsFlow.value = dao.getAll()
     }
     
     suspend fun toggleAutomation(id: String, enabled: Boolean) = withContext(Dispatchers.IO) {
-        val automation = dao.getById(id)?.toAutomation() ?: return@withContext
+        val automation = dao.getById(id) ?: return@withContext
         val updated = automation.copy(enabled = enabled)
-        dao.update(updated.toEntity())
+        dao.update(updated)
         
         if (enabled) {
             scheduleAutomation(updated)
@@ -59,11 +59,11 @@ class AutomationManager(private val context: Context) {
             cancelAutomation(id)
         }
         
-        _automationsFlow.value = dao.getAll().map { it.toAutomation() }
+        _automationsFlow.value = dao.getAll()
     }
     
     suspend fun runNow(id: String) = withContext(Dispatchers.IO) {
-        val automation = dao.getById(id)?.toAutomation() ?: return@withContext
+        val automation = dao.getById(id) ?: return@withContext
         executeAutomation(automation)
     }
     
@@ -143,7 +143,7 @@ class AutomationManager(private val context: Context) {
             lastResult = result,
             runCount = automation.runCount + 1
         )
-        dao.update(updated.toEntity())
+        dao.update(updated)
     }
     
     private fun calculateDelay(targetHour: Int, targetMinute: Int): Long {

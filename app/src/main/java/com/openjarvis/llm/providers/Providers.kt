@@ -15,10 +15,10 @@ class OpenRouterProvider(
     private val apiKey: String,
     private val model: String = "meta-llama/llama-3-8b-instruct:free"
 ) : LLMProvider {
-
+    
     override val name: String = "OpenRouter"
     override val baseUrl: String = "https://openrouter.ai/api/v1"
-
+    
     override suspend fun complete(
         systemPrompt: String,
         userMessage: String
@@ -39,7 +39,7 @@ class OpenRouterProvider(
                 put("max_tokens", 1024)
                 put("temperature", 0.1)
             }.toString()
-
+            
             val request = Request.Builder()
                 .url("$baseUrl/chat/completions")
                 .addHeader("Authorization", "Bearer $apiKey")
@@ -48,7 +48,7 @@ class OpenRouterProvider(
                 .addHeader("X-Title", "Open Jarvis")
                 .post(requestBody.toRequestBody("application/json".toMediaType()))
                 .build()
-
+            
             HttpClient.client.newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: throw Exception("Empty response")
                 val json = JSONObject(body)
@@ -65,7 +65,7 @@ class OpenRouterProvider(
             }
         }
     }
-
+    
     override suspend fun testConnection(): Result<Long> = withContext(Dispatchers.IO) {
         runCatching {
             val startTime = System.currentTimeMillis()
@@ -74,7 +74,7 @@ class OpenRouterProvider(
                 .addHeader("Authorization", "Bearer $apiKey")
                 .get()
                 .build()
-
+            
             HttpClient.client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     throw Exception("HTTP ${response.code}")
@@ -89,10 +89,10 @@ class AnthropicProvider(
     private val apiKey: String,
     private val model: String = "claude-haiku-4-20250514"
 ) : LLMProvider {
-
+    
     override val name: String = "Anthropic Claude"
     override val baseUrl: String = "https://api.anthropic.com/v1"
-
+    
     override suspend fun complete(
         systemPrompt: String,
         userMessage: String
@@ -109,7 +109,7 @@ class AnthropicProvider(
                     })
                 })
             }.toString()
-
+            
             val request = Request.Builder()
                 .url("$baseUrl/messages")
                 .addHeader("x-api-key", apiKey)
@@ -117,7 +117,7 @@ class AnthropicProvider(
                 .addHeader("Content-Type", "application/json")
                 .post(requestBody.toRequestBody("application/json".toMediaType()))
                 .build()
-
+            
             HttpClient.client.newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: throw Exception("Empty response")
                 val json = JSONObject(body)
@@ -133,7 +133,7 @@ class AnthropicProvider(
             }
         }
     }
-
+    
     override suspend fun testConnection(): Result<Long> = withContext(Dispatchers.IO) {
         runCatching {
             val startTime = System.currentTimeMillis()
@@ -144,7 +144,7 @@ class AnthropicProvider(
                     JSONObject().put("role", "user").put("content", "ping")
                 ))
             }.toString()
-
+            
             val request = Request.Builder()
                 .url("$baseUrl/messages")
                 .addHeader("x-api-key", apiKey)
@@ -152,7 +152,7 @@ class AnthropicProvider(
                 .addHeader("Content-Type", "application/json")
                 .post(requestBody.toRequestBody("application/json".toMediaType()))
                 .build()
-
+            
             HttpClient.client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     throw Exception("HTTP ${response.code}")
@@ -167,10 +167,10 @@ class OpenAIProvider(
     private val apiKey: String,
     private val model: String = "gpt-4o-mini"
 ) : LLMProvider {
-
+    
     override val name: String = "OpenAI"
     override val baseUrl: String = "https://api.openai.com/v1"
-
+    
     override suspend fun complete(
         systemPrompt: String,
         userMessage: String
@@ -191,14 +191,14 @@ class OpenAIProvider(
                 put("max_tokens", 1024)
                 put("temperature", 0.1)
             }.toString()
-
+            
             val request = Request.Builder()
                 .url("$baseUrl/chat/completions")
                 .addHeader("Authorization", "Bearer $apiKey")
                 .addHeader("Content-Type", "application/json")
                 .post(requestBody.toRequestBody("application/json".toMediaType()))
                 .build()
-
+            
             HttpClient.client.newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: throw Exception("Empty response")
                 val json = JSONObject(body)
@@ -215,7 +215,7 @@ class OpenAIProvider(
             }
         }
     }
-
+    
     override suspend fun testConnection(): Result<Long> = withContext(Dispatchers.IO) {
         runCatching {
             val startTime = System.currentTimeMillis()
@@ -224,7 +224,7 @@ class OpenAIProvider(
                 .addHeader("Authorization", "Bearer $apiKey")
                 .get()
                 .build()
-
+            
             HttpClient.client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     throw Exception("HTTP ${response.code}")
@@ -236,13 +236,12 @@ class OpenAIProvider(
 }
 
 class OllamaProvider(
-    private val hostUrl: String,
+    private val baseUrl: String,
     private val model: String = "llama3"
 ) : LLMProvider {
-
+    
     override val name: String = "Ollama"
-    override val baseUrl: String = hostUrl
-
+    
     override suspend fun complete(
         systemPrompt: String,
         userMessage: String
@@ -262,13 +261,13 @@ class OllamaProvider(
                 })
                 put("stream", false)
             }.toString()
-
+            
             val request = Request.Builder()
                 .url("$baseUrl/api/chat")
                 .addHeader("Content-Type", "application/json")
                 .post(requestBody.toRequestBody("application/json".toMediaType()))
                 .build()
-
+            
             HttpClient.client.newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: throw Exception("Empty response")
                 val json = JSONObject(body)
@@ -282,19 +281,19 @@ class OllamaProvider(
             }
         }
     }
-
+    
     override suspend fun testConnection(): Result<Long> = withContext(Dispatchers.IO) {
         runCatching {
             val startTime = System.currentTimeMillis()
             val requestBody = JSONObject().apply {
                 put("model", model)
             }.toString()
-
+            
             val request = Request.Builder()
                 .url("$baseUrl/api/tags")
                 .post(requestBody.toRequestBody("application/json".toMediaType()))
                 .build()
-
+            
             HttpClient.client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     throw Exception("HTTP ${response.code}")
@@ -306,14 +305,13 @@ class OllamaProvider(
 }
 
 class CustomProvider(
-    private val hostUrl: String,
+    private val baseUrl: String,
     private val apiKey: String = "",
     private val model: String = "gpt-4o-mini"
 ) : LLMProvider {
-
+    
     override val name: String = "Custom"
-    override val baseUrl: String = hostUrl
-
+    
     override suspend fun complete(
         systemPrompt: String,
         userMessage: String
@@ -334,16 +332,16 @@ class CustomProvider(
                 put("max_tokens", 1024)
                 put("temperature", 0.1)
             }.toString()
-
+            
             val builder = Request.Builder()
                 .url("$baseUrl/chat/completions")
                 .addHeader("Content-Type", "application/json")
                 .post(requestBody.toRequestBody("application/json".toMediaType()))
-
+            
             if (apiKey.isNotBlank()) {
                 builder.addHeader("Authorization", "Bearer $apiKey")
             }
-
+            
             HttpClient.client.newCall(builder.build()).execute().use { response ->
                 val body = response.body?.string() ?: throw Exception("Empty response")
                 val json = JSONObject(body)
@@ -360,19 +358,19 @@ class CustomProvider(
             }
         }
     }
-
+    
     override suspend fun testConnection(): Result<Long> = withContext(Dispatchers.IO) {
         runCatching {
             val startTime = System.currentTimeMillis()
-
+            
             val builder = Request.Builder()
                 .url("$baseUrl/models")
                 .get()
-
+            
             if (apiKey.isNotBlank()) {
                 builder.addHeader("Authorization", "Bearer $apiKey")
             }
-
+            
             HttpClient.client.newCall(builder.build()).execute().use { response ->
                 if (!response.isSuccessful) {
                     throw Exception("HTTP ${response.code}")

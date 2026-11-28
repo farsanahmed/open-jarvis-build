@@ -100,7 +100,7 @@ RULES:
 
 fun executeTask(cleanCommand: String) {
         workingMemory = TaskWorkingMemory()
-
+        
         currentJob = scope.launch {
             taskMutex.withLock {
                 try {
@@ -317,4 +317,4 @@ fun executeTask(cleanCommand: String) {
         
         return null
     }
-}}
+}
