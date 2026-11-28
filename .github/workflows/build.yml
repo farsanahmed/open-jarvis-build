@@ -74,7 +74,6 @@ jobs:
           path: |
             app/build/reports/tests/testDebugUnitTest/
             app/build/test-results/testDebugUnitTest/
-          if-no-files-found: ignore
 
   emulator:
     name: Emulator smoke test (API ${{ matrix.api }})
