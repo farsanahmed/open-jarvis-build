@@ -112,8 +112,6 @@ jobs:
           target: google_apis
           arch: x86_64
           disable-animations: true
-          disable-linux-hw-acceleration: false
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -memory 2048
           boot-timeout: 900
           script: |
             adb install -r app/build/outputs/apk/debug/app-debug.apk
@@ -152,7 +150,7 @@ jobs:
     name: Publish release
     runs-on: ubuntu-latest
     needs: [build, emulator]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: always() && needs.build.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     steps:
       - name: Download APK
         uses: actions/download-artifact@v4
@@ -166,4 +164,7 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: OpenJarvis v1.0.${{ github.run_number }}
           prerelease: false
+          body: |
+            Emulator smoke tests: ${{ needs.emulator.result }}
+            A change counts as verified only when the API 28 and API 34 jobs are green.
           files: output/open-jarvis.apk
