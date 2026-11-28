@@ -574,7 +574,7 @@ private fun BottomNavBar(
         color = VoidColor.Void900
     ) {
         Column {
-            Divider(
+            HorizontalDivider(
                 modifier = Modifier.fillMaxWidth(),
                 thickness = 1.dp,
                 color = VoidColor.BorderSubtle
