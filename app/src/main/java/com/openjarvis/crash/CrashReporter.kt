@@ -100,3 +100,4 @@ object CrashReporter {
         type = "text/plain"
         putExtra(Intent.EXTRA_SUBJECT, "Open Jarvis crash report")
     }
+}

@@ -22,7 +22,7 @@ class CrashReportActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val trace = CrashReporter.lastTrace(this)
-        val when = CrashReporter.lastWhen(this)
+        val stamp = CrashReporter.lastWhen(this)
 
         setContent {
             OpenJarvisTheme {
@@ -32,7 +32,7 @@ class CrashReportActivity : ComponentActivity() {
                 ) {
                     CrashScreen(
                         trace = trace,
-                        stamp = when,
+                        stamp = stamp,
                         onShare = { share(trace) },
                         onClear = {
                             CrashReporter.clear(this)
