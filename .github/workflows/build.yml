@@ -40,7 +40,14 @@ jobs:
         run: ./gradlew assembleDebug --stacktrace
 
       - name: JVM unit tests
-        run: ./gradlew testDebugUnitTest --stacktrace
+        run: |
+          set -e
+          ./gradlew testDebugUnitTest --stacktrace || {
+            for f in app/build/test-results/testDebugUnitTest/*.xml; do
+              [ -f "$f" ] && cat "$f"
+            done
+            exit 1
+          }
 
       - name: Rename APK
         run: |
@@ -63,7 +70,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-results
-          path: app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: ignore
+          path: |
+            app/build/reports/tests/testDebugUnitTest/
+            app/build/test-results/testDebugUnitTest/
+          if-no-files-found: ignore
 
   emulator:
     name: Emulator smoke test (API ${{ matrix.api }})
