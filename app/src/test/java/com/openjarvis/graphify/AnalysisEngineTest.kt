@@ -13,7 +13,7 @@ import kotlinx.coroutines.Dispatchers
 class AnalysisEngineTest {
 
     @Test
-    fun `3 identical sequences should create PatternNode with positive confidence`() = runTest(Dispatchers.IO) {
+    fun `3 identical sequences should create PatternNode with positive confidence`() = runTest {
         val context = testContext()
         val engine = AnalysisEngine(context)
         val repo = GraphifyRepository(context)
@@ -37,7 +37,7 @@ class AnalysisEngineTest {
     }
 
     @Test
-    fun `confidence decays after 7 days stale`() = runTest(Dispatchers.IO) {
+    fun `confidence decays after 7 days stale`() = runTest {
         val context = testContext()
         val engine = AnalysisEngine(context)
         val repo = GraphifyRepository(context)
@@ -66,7 +66,7 @@ class AnalysisEngineTest {
     }
 
     @Test
-    fun `contact fuzzy match within distance 2`() = runTest(Dispatchers.IO) {
+    fun `contact fuzzy match within distance 2`() = runTest {
         val context = testContext()
         val repo = GraphifyRepository(context)
 
