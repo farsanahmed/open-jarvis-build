@@ -68,6 +68,10 @@ class AutomationManager(private val context: Context) {
     }
     
     private suspend fun scheduleAutomation(automation: Automation) {
+        scheduleInternal(automation)
+    }
+
+    private fun scheduleInternal(automation: Automation) {
         val constraints = Constraints.Builder()
             .setRequiresBatteryNotLow(false)
             .build()
@@ -124,7 +128,7 @@ class AutomationManager(private val context: Context) {
         }
         
         WorkManager.getInstance(context)
-            .enqueueUniqueWork(automation.id, ExistingWorkPolicy.REPLACE, request as androidx.work.PeriodicWorkRequest)
+            .enqueueUniqueWork(automation.id, ExistingWorkPolicy.REPLACE, request)
     }
     
     private fun cancelAutomation(id: String) {
