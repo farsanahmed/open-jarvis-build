@@ -614,7 +614,7 @@ private fun InputRowWithVoice(
 
 @Composable
 private fun DividerLine() {
-    Divider(
+    HorizontalDivider(
         modifier = Modifier.fillMaxWidth(),
         thickness = 1.dp,
         color = VoidColor.Void600

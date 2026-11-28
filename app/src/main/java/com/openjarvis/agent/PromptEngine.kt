@@ -192,10 +192,10 @@ Respond ONLY with JSON matching Intent schema.
     """.trimIndent()
     
     suspend fun analyze(prompt: String): JSONObject = withContext(Dispatchers.IO) {
-        val adapter = UniversalAdapter(context)
+        val adapter = UniversalAdapter(this@PromptEngine.context)
         val fullPrompt = "$systemPrompt\n\nUser prompt: $prompt"
         
-        val result = adapter.complete(system, prompt)
+        val result = adapter.complete(fullPrompt, prompt)
         result.getOrNull()?.let { jsonStr ->
             try {
                 JSONObject(jsonStr.trim())
