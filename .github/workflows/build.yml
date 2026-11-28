@@ -37,12 +37,12 @@ jobs:
         run: gradle wrapper --gradle-version 8.5
 
       - name: Assemble Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace --continue
 
       - name: JVM unit tests
         run: |
           set -e
-          ./gradlew testDebugUnitTest --stacktrace || {
+          ./gradlew testDebugUnitTest --stacktrace --continue || {
             for f in app/build/test-results/testDebugUnitTest/*.xml; do
               [ -f "$f" ] && cat "$f"
             done
@@ -103,7 +103,7 @@ jobs:
         run: gradle wrapper --gradle-version 8.5
 
       - name: Build test APKs
-        run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace
+        run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace --continue
 
       - name: Run smoke and all-screens tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -129,7 +129,7 @@ jobs:
             fi
             adb shell screencap -p /sdcard/screen-api${{ matrix.api }}.png
             adb pull /sdcard/screen-api${{ matrix.api }}.png screen-api${{ matrix.api }}.png
-            ./gradlew connectedDebugAndroidTest --stacktrace
+            ./gradlew connectedDebugAndroidTest --stacktrace --continue
 
       - name: Upload logcat
         if: always()

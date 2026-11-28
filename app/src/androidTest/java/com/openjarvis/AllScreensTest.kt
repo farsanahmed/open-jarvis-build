@@ -30,11 +30,11 @@ class AllScreensTest {
     private fun assertNoFatal() {
         val packages = InstrumentationRegistry.getInstrumentation()
             .targetContext.packageName
-        val alive = device().wait(
-            Until.hasPackage(packages),
+        val found = device().wait(
+            Until.findObject(By.pkg(packages)),
             timeout
         )
-        assertTrue("process for $packages is not alive", alive)
+        assertTrue("process for $packages is not alive", found != null)
     }
 
     @Test
