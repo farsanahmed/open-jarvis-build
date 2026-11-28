@@ -91,8 +91,8 @@ fun FloatingOverlayWidget(
         targetState = isExpanded,
         transitionSpec = {
             ContentTransform(
-                enter = fadeIn(animationSpec = tween(150)) + expandHorizontally(),
-                exit = fadeOut(animationSpec = tween(100)) + shrinkVertically(),
+                targetContentEnter = fadeIn(animationSpec = tween(150)) + expandHorizontally(),
+                initialContentExit = fadeOut(animationSpec = tween(100)) + shrinkVertically(),
                 sizeTransform = SizeTransform(clip = false)
             )
         },
