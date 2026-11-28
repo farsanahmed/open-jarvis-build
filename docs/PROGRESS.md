@@ -2,50 +2,50 @@
 
 ## Last green commit
 
-`c7a846c` — CI run <https://github.com/farsanahmed/open-jarvis-build/actions/runs/46005276334> (branch `baseline`, success, 3m42s).
+`1541dbf` — run <https://github.com/farsanahmed/open-jarvis-build/actions/runs/46113859452>: **Compile, gate and unit test ✓ 3m22s**. Emulator jobs still running at the time of writing.
 
-Current `main` = `c7a846c` + the commits below. Compile + manifest-vs-dex gate + JVM unit tests are green as of `d683265` (run <https://github.com/farsanahmed/open-jarvis-build/actions/runs/46110551095>, job "Compile, gate and unit test" ✓ 3m14s). The emulator job in that run failed on "Timeout waiting for emulator to boot", not on the app.
+Baseline for this rebuild: `c7a846c` (run <https://github.com/farsanahmed/open-jarvis-build/actions/runs/46005276334>, success).
 
 ## Phases done
 
 | Phase | Commit | CI | Notes |
 |---|---|---|---|
-| base | `601b671` | NOT VERIFIED | compile/gate/unit green at `d683265`; emulator boot fix in flight |
+| base | `1541dbf` | compile/gate/unit ✓, emulator NOT VERIFIED | all modules restored, command box + Stop, crash reporter |
+
+## Module status
+
+| Module | Status |
+|---|---|
+| `accessibility` (service, ActionExecutor, ScreenReader) | restored as original |
+| `agent` (AgentCore + Stop, PromptEngine, ProviderFallbackChain, SelfHealingExecutor, RiskyActionConfirmation, LLMResponseValidator, PromptSanitizer) | restored with fixes |
+| `graphify` (Room DB, nodes, DAOs, AnalysisEngine, fuzzy contact lookup) | restored with fixes |
+| `intelligence` (AppAnalyzer, TaskRouter, AIAppInteractor, JarvisNotificationListener, ClipboardIntelligence, AppIntelligence*) | restored with fixes |
+| `llm` (UniversalAdapter + 7 providers, keystore fallback) | restored with fixes |
+| `local` (ModelManager, DownloadService) | restored as original, DownloadService declared |
+| `mcp` (MCPClient, MCPManager) | restored with fixes |
+| `skills` (SkillEngine + 7 JSON assets) | restored with fixes |
+| `automation` (AutomationDB, AutomationManager, AutomationWorker) | restored with fixes, worker implemented |
+| `bridge` (SocketServer, Termux CLI) | restored with fixes |
+| `watch` (ScreenWatcher) | restored with fixes |
+| `vision` (ScreenshotCapture, VisionModule) | restored with fixes |
+| `voice` (VoiceManager, AndroidSTTEngine, AndroidTTSEngine) | restored with fixes |
+| `ui` (MainActivity with command box + Stop, Settings, CrashReport, Onboarding, Dashboard, OverlayService, FloatingOverlayWidget, Tutorial, PromptLibrary, theme) | restored with fixes |
+| `crash` (CrashReporter, CrashReportActivity) | new in this fork |
+
+Nothing is stubbed and no dead buttons ship.
+
+## Manifest
+
+Declares `.ui.MainActivity` (launcher), `.ui.SettingsActivity`, `.ui.CrashReportActivity`, `.ui.onboarding.OnboardingActivity`, `.accessibility.JarvisAccessibilityService`, `.ui.OverlayService` (`specialUse`), `.local.DownloadService` (`dataSync`), `.intelligence.JarvisNotificationListener` (bind notification listener), `.intelligence.AppIntelligenceReceiver` (boot + package added). Permissions: INTERNET, ACCESS_NETWORK_STATE, RECORD_AUDIO, WAKE_LOCK, SYSTEM_ALERT_WINDOW, FOREGROUND_SERVICE, FOREGROUND_SERVICE_SPECIAL_USE, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED.
 
 ## Commits on top of the baseline
 
-| Commit | Change |
-|---|---|
-| `eaf864a` | docs: build rules and progress log |
-| `2aef334` | UniversalAdapter keystore init made non-fatal |
-| `960da3c` | manifest launcher activity `.ui.MainActivity` |
-| `795aeee` | crash reporter + CrashReportActivity |
-| `e233f58` | MainActivity resilient startup |
-| `b6574f0` | CI gates: compile, manifest-vs-dex, unit tests, API 28/34 smoke, all-screens, release |
-| `eae045f` | drop SocketServerTest until bridge is restored |
-| `b1d0ed4` | AnalysisEngineTest under Robolectric, legal backtick name |
-| `c172211` | `runTest` needs a TestDispatcher |
-| `22b2508` | real fuzzy contact lookup (edit distance 2) |
-| `0edda75` | restore agent/overlay/voice/mcp/skills/automation/watch/bridge/onboarding/dashboard/tutorial + command box and Stop |
-| `ab20017` | keep only modules that compile; defer the Compose-heavy ones |
-| `05926fb`, `9acf135`, `d683265` | PromptEngine/AutomationManager compile fixes |
-| `601b671` | emulator boot options |
+`eaf864a` docs → `2aef334` keystore fallback → `960da3c` manifest launcher → `795aeee`/`e233f58` crash reporter + resilient startup → `b6574f0` CI gates → `eae045f` drop stale test → `b1d0ed4` Robolectric test → `c172211` runTest dispatcher → `22b2508` fuzzy contacts → `0edda75` restore batch + command box → `ab20017` prune non-compiling → `05926fb`/`9acf135`/`d683265` PromptEngine/AutomationManager → `601b671` emulator options → `05cb510` docs → `6f3839a` restore UI/vision/voice/watch/skills → `57bd604`/`4c6fee4` fixes → `0e479b4`/`1541dbf` AnimatedContent/ContentTransform.
 
 ## Known problems
 
-- Emulator images: `target: default` + `api-level: 28` never booted on the hosted runner. Changed to `google_apis` with `-no-snapshot -gpu swiftshader_indirect -memory 2048` and a 900 s boot timeout. NOT VERIFIED yet.
-- Deferred modules, removed rather than stubbed (no dead buttons ship). Exact first errors when restored against Compose BOM 2023.10.01 / ML Kit 16.0.0:
-  - `ui/dashboard/DashboardScreen.kt`: `withStyle`, `scale`, `alpha` parameter, `Divider`.
-  - `ui/overlay/FloatingOverlayWidget.kt`: `detectTransformableState`, `pointerInput`, `infiniteTransition`, `automirrored`, `KeyboardArrowUp`, `AnimatedContent` `ContentTransform`.
-  - `ui/onboarding/OnboardingActivity.kt`: `animateFloat`, `updateTransition`, `collectAsStateWithLifecycle`, `delay` outside a coroutine.
-  - `ui/tutorial/TutorialMode.kt`: `HighContrast`, `description`, `var` reassignment.
-  - `vision/ScreenshotCapture.kt`: `ImageReader` `width`/`height`/`allocation`.
-  - `vision/VisionModule.kt`: text `confidence`.
-  - `voice/AndroidSTTEngine.kt`: `EXTRA_SPEECH_INPUT_MINIMUM_CONFIDENCE_THRESHOLD`; `voice/VoiceManager.kt`: recognizer `cancel`.
-  - `watch/ScreenWatcher.kt`: service-based `ScreenReader`, `var` reassignment.
-  - `skills/SkillEngine.kt`: `File(context.assets, …)` and `listFiles()` overloads.
-  Each needs a real API downgrade or new code, not a stub.
-- `origin/main` history was rewritten once (`74c5434` → `eaf864a`, force push) to drop a workflow that skipped Kotlin compilation. The old commits stay reachable as `wip-restore-075aac3` and tag `v1.0.18`.
-- Local Android build is impossible in this environment (AndroidHarness Linux shell, bionic libc, Gradle native libraries do not load). All builds run on GitHub Actions.
-- `cc04cf1` (an earlier MainActivity repair) exists only in the separate upstream clone `/storage/emulated/0/Open Jarvis` and was never pushed. `d6c39b4` does not exist in either repo.
-- `app/build.gradle` is byte-identical between `c7a846c` and the red `74c5434`; the unresolved `Column`/`padding`/`dp`/`Text` came from `MainActivity.kt` dropping its Compose imports, not from Gradle.
+- Emulator images: `target: default` never booted; now `google_apis` with `-no-snapshot -gpu swiftshader_indirect -memory 2048` and a 900 s boot timeout. NOT VERIFIED.
+- `origin/main` history was rewritten once (`74c5434` → `eaf864a`, force push) to drop a workflow that skipped Kotlin compilation. Old commits stay reachable as `wip-restore-075aac3` and tag `v1.0.18`.
+- Local Android build is impossible here (AndroidHarness Linux shell, bionic libc, Gradle native libraries do not load). All builds run on GitHub Actions.
+- `cc04cf1` exists only in the separate upstream clone `/storage/emulated/0/Open Jarvis`; never pushed. `d6c39b4` does not exist in either repo.
+- `app/build.gradle` was byte-identical between `c7a846c` and the red `74c5434`; the unresolved `Column`/`padding`/`dp`/`Text` came from `MainActivity.kt` dropping its Compose imports. The BOM is now 2024.09.00 because the restored UI needs Compose 1.7 APIs.
