@@ -50,6 +50,10 @@ jobs:
           fi
 
       - name: Assemble Debug APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleDebug --stacktrace --continue
 
       - name: JVM unit tests
