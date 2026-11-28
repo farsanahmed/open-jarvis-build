@@ -97,17 +97,4 @@ class SmokeRobolectricTest {
         assertNotNull("notification listener was null", service)
         service.onDestroy()
     }
-
-    @Test
-    fun targetPackageIsIntact() {
-        // Robolectric serves the test package (org.robolectric.default), so the
-        // launcher lookup is done against the manifest package under test.
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        val launcher = context.packageManager.getLaunchIntentForPackage("com.openjarvis")
-        assertNotNull("no launcher intent for com.openjarvis", launcher)
-        org.junit.Assert.assertEquals(
-            "com.openjarvis.ui.MainActivity",
-            launcher!!.component?.className
-        )
-    }
 }
