@@ -217,7 +217,7 @@ fun executeTask(cleanCommand: String) {
                             else -> error.message ?: "Unknown error"
                         }
                         _state.value = AgentState.Error(msg)
-                        skill?.let { skillEngine.recordUsage(it.id, false) }
+                        usedSkill?.let { skillEngine.recordUsage(it.id, false) }
                         graphifyRepo.logTask(cleanCommand, "failed: $msg", "", 0)
                     }
                 )
